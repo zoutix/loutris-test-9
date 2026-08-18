@@ -1,6 +1,1 @@
-{
-  "name": "loutris",
-  "private": true,
-  "scripts": {"dev":"npm run dev -w apps/web","build":"npm run build -w apps/web","lint":"npm run lint -w apps/web"},
-  "workspaces":["apps/*","packages/*"]
-}
+{"name":"loutris","private":true,"packageManager":"npm@11.0.0","scripts":{"dev":"turbo dev","build":"turbo build","lint":"turbo lint"},"workspaces":["apps/*","packages/*"],"devDependencies":{"turbo":"^2.5.0"}}
