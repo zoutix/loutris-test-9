@@ -1,0 +1,9 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+model User { id String @id @default(cuid()) username String @unique email String @unique passwordHash String? oauthProvider String? avatarUrl String? elo Int @default(1200) tier String @default("Quartz") division Int @default(3) gamesPlayed Int @default(0) placementComplete Boolean @default(false) createdAt DateTime @default(now()) guesses DuelGuess[] }
+model DuelMatch { id String @id @default(cuid()) playerAId String playerBId String secretWord String firstMoverId String status String winnerId String? endReason String? eloChangeA Int? eloChangeB Int? startedAt DateTime @default(now()) endedAt DateTime? guesses DuelGuess[] }
+model DuelGuess { id String @id @default(cuid()) matchId String userId String turnNumber Int word String feedback Json submittedAt DateTime @default(now()) clockRemainingMs Int match DuelMatch @relation(fields:[matchId],references:[id]) user User @relation(fields:[userId],references:[id]) }
+model DailyWord { id String @id @default(cuid()) date DateTime @unique word String dayIndex Int @unique }
+model DailyAttempt { id String @id @default(cuid()) userId String dailyWordId String guesses Json solved Boolean guessCount Int completedAt DateTime @default(now()) }
+model Streak { userId String @id current Int @default(0) longest Int @default(0) lastPlayedDate DateTime? }
+model Friendship { userId String friendId String status String @default("pending") @@id([userId,friendId]) }
