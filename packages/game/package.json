@@ -1,0 +1,1 @@
+{"name":"@loutris/game","private":true,"version":"0.1.0","exports":{"./elo":"./src/elo.ts"}}
