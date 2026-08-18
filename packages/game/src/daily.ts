@@ -1,0 +1,4 @@
+const DAILY_WORDS=['CRANE','SLATE','AUDIO','PLANT','SHARE','STONE','BRAVE','CLOUD','TRAIL','PRIDE','LIGHT','MOUSE','CHESS','WATER','HEART'];
+export function dayIndex(date=new Date()){const utc=Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate());return Math.floor(utc/86400000);}
+export function dailyWord(date=new Date()){return DAILY_WORDS[dayIndex(date)%DAILY_WORDS.length];}
+export function updateStreak(lastPlayed:string|undefined,current:number,longest:number,today=new Date()){if(!lastPlayed)return{current:1,longest:Math.max(1,longest)};const last=new Date(lastPlayed);const diff=Math.round((Date.UTC(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate())-Date.UTC(last.getUTCFullYear(),last.getUTCMonth(),last.getUTCDate()))/86400000);if(diff===0)return{current,longest};const next=diff===1?current+1:1;return{current:next,longest:Math.max(longest,next)}}
