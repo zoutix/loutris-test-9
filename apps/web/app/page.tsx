@@ -1,0 +1,40 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { Settings, UserRound, X, Trophy, Flame, ChevronLeft, RotateCcw } from 'lucide-react';
+
+const WORDS = ['CRANE','SLATE','AUDIO','PLANT','SHARE','STONE','BRAVE','CLOUD','TRAIL','PRIDE','LIGHT','MOUSE','CHESS','WATER','HEART'];
+const KEY_ROWS = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+type Mode = 'home'|'ranked'|'daily'|'classic';
+type TileState = ''|'correct'|'present'|'absent';
+
+function scoreGuess(word:string, secret:string):TileState[]{
+  const result:Array<TileState>=Array(5).fill('absent'); const left=secret.split('');
+  word.split('').forEach((c,i)=>{if(c===secret[i]){result[i]='correct';left[i]='';}});
+  word.split('').forEach((c,i)=>{if(result[i]==='correct')return;const j=left.indexOf(c);if(j>=0){result[i]='present';left[j]='';}});
+  return result;
+}
+
+function Board({rows, states}:{rows:string[];states:TileState[][]}){
+  return <div className="board ltr">{Array.from({length:6},(_,r)=><div className="row" key={r}>{Array.from({length:5},(_,c)=>{const letter=rows[r]?.[c]??'';return <div key={c} className={`tile ${letter?'filled':''} ${states[r]?.[c]??''}`}>{letter}</div>})}</div>)}</div>
+}
+
+function Game({mode,onBack}:{mode:Exclude<Mode,'home'>;onBack:()=>void}){
+  const secret=useMemo(()=>mode==='daily'?'CRANE':mode==='classic'?'STONE':'PLANT', [mode]);
+  const [rows,setRows]=useState<string[]>([]); const [current,setCurrent]=useState(''); const [states,setStates]=useState<TileState[][]>([]); const [message,setMessage]=useState(''); const [ended,setEnded]=useState(false); const [seconds,setSeconds]=useState(mode==='ranked'?180:0); const [keyboard,setKeyboard]=useState<Record<string,TileState>>({});
+  useEffect(()=>{if(mode!=='ranked'||ended)return;const id=setInterval(()=>setSeconds(s=>{if(s<=1){setEnded(true);setMessage('انتهى الوقت — فوز بالمهلة');return 0}return s-1}),1000);return()=>clearInterval(id)},[mode,ended]);
+  const submit=()=>{if(current.length!==5||ended)return;const word=current.toUpperCase();if(!WORDS.includes(word)&&word!==secret){setMessage('هذه الكلمة غير موجودة في القاموس');setTimeout(()=>setMessage(''),1300);return}const feedback=scoreGuess(word,secret);const next=[...states,feedback];setRows([...rows,word]);setStates(next);setCurrent('');feedback.forEach((s,i)=>{const k=word[i];setKeyboard(p=>({...p,[k]:s==='correct'?'correct':p[k]==='correct'?'correct':s}))});if(word===secret){setEnded(true);setMessage(mode==='daily'?'أحسنت! حافظت على التحدي اليومي.':'فوز رائع — الكلمة صحيحة!')}else if(next.length===6){setEnded(true);setMessage(`انتهت المحاولات — الكلمة ${secret}`)} };
+  const press=(k:string)=>{if(ended)return;if(k==='ENTER')submit();else if(k==='BACK')setCurrent(v=>v.slice(0,-1));else if(current.length<5)setCurrent(v=>v+k)};
+  const mins=Math.floor(seconds/60).toString().padStart(2,'0'), secs=(seconds%60).toString().padStart(2,'0');
+  return <main className="game"><div className="gameHeader"><button className="secondary" onClick={onBack}>رجوع</button><div className="gameTitle">{mode==='ranked'?'مواجهة مصنفة':mode==='daily'?'تحدي اليوم':'كلاسيك'}</div>{mode==='ranked'?<div className={`clock ${seconds<30?'active':''}`}>{mins}:{secs}</div>:<div className="clock">{rows.length}/6</div>}</div>{mode==='ranked'&&<div className="turn">دورك الآن · الكلمة مشتركة بين اللاعبين</div>}<Board rows={rows} states={states}/><div className="keyboard ltr">{KEY_ROWS.map((row,i)=><div className="keyrow" key={row}>{i===2&&<button className="key wide" onClick={()=>press('ENTER')}>ENTER</button>}{row.split('').map(k=><button key={k} className={`key ${keyboard[k]??''}`} onClick={()=>press(k)}>{k}</button>)}{i===2&&<button className="key wide" onClick={()=>press('BACK')}>⌫</button>}</div>)}</div>{message&&<div className="toast">{message}</div>}{ended&&<div className="actions" style={{justifyContent:'center'}}><button className="primary" onClick={()=>{setRows([]);setStates([]);setKeyboard({});setEnded(false);setMessage('')}}><RotateCcw size={16}/> العب مرة أخرى</button></div>}</main>
+}
+
+export default function Home(){
+ const [mode,setMode]=useState<Mode>('home'); const [modal,setModal]=useState<'stats'|'settings'|null>(null);
+ if(mode!=='home')return <div className="app"><Header onNav={setMode} onModal={setModal}/><Game mode={mode} onBack={()=>setMode('home')}/><Footer/></div>;
+ return <div className="app"><Header onNav={setMode} onModal={setModal}/><main><section className="hero"><div><div className="eyebrow">LOUTRIS · DUEL THE WORD</div><h1>الكلمة نفسها.<br/><span style={{color:'var(--gold)'}}>منافس مختلف.</span></h1><p>لعبة كلمات تنافسية سريعة. خمّن الكلمة السرية قبل خصمك، وشارك نفس لوحة اللعب في سباق على مدار الساعة.</p><div className="actions"><button className="primary" onClick={()=>setMode('ranked')}>ابدأ مواجهة مصنفة <ChevronLeft size={17}/></button><button className="secondary" onClick={()=>setMode('daily')}>تحدي اليوم</button></div></div><div className="rankCard"><div className="rankTop"><div><div className="rankLabel">رتبتك الحالية</div><div className="rankName">Quartz III</div><div className="elo">1,240 ELO</div></div><div className="badge">Q</div></div><div className="progress"><i/></div><div className="rankFoot"><span>60 نقطة إلى Quartz II</span><span>12 مباراة</span></div></div></section><div className="sectionTitle"><h2>اختر طريقتك</h2><span>ثلاث طرق للعب</span></div><section className="modes"><ModeCard n="01" title="مواجهة مصنفة" text="1 ضد 1 · 3:00 لكل لاعب · 7 محاولات مشتركة" accent onClick={()=>setMode('ranked')}/><ModeCard n="02" title="تحدي اليوم" text="كلمة واحدة للجميع · حافظ على سلسلة انتصاراتك" streak onClick={()=>setMode('daily')}/><ModeCard n="03" title="كلاسيك" text="تدرب بلا حدود. كلمة جديدة في كل جولة." onClick={()=>setMode('classic')}/></section></main><Footer/>{modal&&<Modal type={modal} close={()=>setModal(null)}/>}</div>
+}
+function Header({onNav,onModal}:{onNav:(m:Mode)=>void;onModal:(m:'stats'|'settings')=>void}){return <header className="topbar"><div className="brand"><div className="mark">L</div><span>LOUTRIS</span></div><nav className="nav"><button className="active" onClick={()=>onNav('home')}>الرئيسية</button><button onClick={()=>onModal('stats')}>الإحصائيات</button><button onClick={()=>onModal('settings')}><Settings size={16}/></button></nav><button className="iconBtn" onClick={()=>onModal('stats')} aria-label="الملف الشخصي"><UserRound size={18}/></button></header>}
+function ModeCard({n,title,text,onClick,accent,streak}:{n:string;title:string;text:string;onClick:()=>void;accent?:boolean;streak?:boolean}){return <button className="mode" onClick={onClick}><span className={`num ${streak?'streak':''}`}>{n}</span><h3>{title}</h3><p>{text}</p><span className="arrow">←</span></button>}
+function Modal({type,close}:{type:'stats'|'settings';close:()=>void}){return <div className="modalBack" onClick={close}><div className="sheet" onClick={e=>e.stopPropagation()}><button className="close" onClick={close}><X/></button>{type==='stats'?<><div className="eyebrow">ملف اللاعب</div><h2>إحصائياتك</h2><p>أداءك الحالي في Loutris — هذه الصفحة ستتوسع مع تاريخ المباريات والـELO.</p><div className="stats"><div className="stat"><b>12</b><span>مباراة</span></div><div className="stat"><b>67%</b><span>نسبة الفوز</span></div><div className="stat"><b>4</b><span>أفضل سلسلة</span></div></div><div className="secondary" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><span>السلسلة اليومية</span><strong><Flame size={15}/> 4 أيام</strong></div></>:<><div className="eyebrow">الإعدادات</div><h2>تجربة Loutris</h2><p>تحكم في الوصول، الصوت، والحساسية البصرية. إعدادات الألوان مصممة لتبقى واضحة في جميع حالات اللعب.</p><div className="secondary" style={{display:'flex',justifyContent:'space-between',marginTop:14}}>ألوان صديقة لعمى الألوان <span>○</span></div><div className="secondary" style={{display:'flex',justifyContent:'space-between',marginTop:8}}>الصوت والمؤثرات <span>●</span></div></>}</div></div>}
+function Footer(){return <footer className="footer"><span>LOUTRIS © 2026</span><span>مصمم للمنافسة · مبني للويب أولاً</span></footer>}
